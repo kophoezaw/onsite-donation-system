@@ -44,7 +44,7 @@
         }
 
         /* Auth Screen */
-        #authScreen, #pendingScreen, #adminPanelScreen {
+        #authScreen, #adminPanelScreen {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -69,7 +69,7 @@
             margin-bottom: 20px;
         }
 
-        .auth-card input {
+        .auth-card select, .auth-card input {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -95,15 +95,6 @@
             background: var(--primary-light);
         }
 
-        .toggle-btn {
-            background: none !important;
-            color: var(--primary) !important;
-            border: none;
-            cursor: pointer;
-            font-size: 13px;
-            margin-top: 5px;
-        }
-
         /* Main App Hidden by default */
         #mainApp {
             display: none;
@@ -111,9 +102,15 @@
 
         .top-bar {
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
+            background: #fffdf5;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--gold);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         /* Header Section */
@@ -171,6 +168,7 @@
         input[type="text"], 
         input[type="number"], 
         input[type="date"], 
+        input[type="password"],
         textarea,
         select {
             padding: 8px 12px;
@@ -389,7 +387,7 @@
             cursor: pointer;
         }
 
-        /* Modal Styles for Slip */
+        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -468,43 +466,60 @@
 </head>
 <body>
 
-    <!-- 1. Authentication Screen -->
+    <!-- 1. Passcode Authentication Screen -->
     <div id="authScreen">
         <div class="auth-card">
-            <h2 id="authTitle">အကောင့်ဝင်ရန်</h2>
-            <form id="authForm" onsubmit="handleAuth(event)">
-                <input type="email" id="authEmail" placeholder="အီးမေးလ် (Email)" required>
-                <input type="password" id="authPassword" placeholder="စကားဝှက် (Password)" required>
-                <button type="submit" id="authSubmitBtn">ဝင်မည် (Login)</button>
+            <h2>အကောင့်ဝင်ရန် (PIN 4 လုံး)</h2>
+            <form id="authForm" onsubmit="handlePinLogin(event)">
+                <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                    <label>အသုံးပြုသူ ရွေးချယ်ပါ:</label>
+                    <select id="userSelect">
+                        <!-- Dynamic loaded -->
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: left;">
+                    <label>Passcode (PIN 4 လုံး):</label>
+                    <input type="password" id="pinInput" maxlength="4" placeholder="****" pattern="[0-9]*" inputmode="numeric" required>
+                </div>
+                <button type="submit">ဝင်မည် (Login)</button>
             </form>
-            <button type="button" class="toggle-btn" onclick="toggleAuthMode()">အကောင့်အသစ်ဖွင့်ရန် (Sign up)</button>
+            <p style="font-size: 12px; color: #777; margin-top: 10px;">(Default Passcode: <b>1234</b>)</p>
         </div>
     </div>
 
-    <!-- 2. Pending Approval Screen -->
-    <div id="pendingScreen" style="display:none;">
-        <div class="container" style="max-width:500px;">
-            <h2 style="color:var(--primary); margin-bottom:15px;">Admin ခွင့်ပြုချက် စောင့်ဆိုင်းနေပါသည်</h2>
-            <p style="margin-bottom:20px; color:#555;">ကျေးဇူးပြု၍ Admin မှ သင့်အကောင့်ကို အတည်ပြုပေးသည်အထိ ခေတ္တစောင့်ဆိုင်းပါ။</p>
-            <button class="btn btn-secondary" onclick="logoutUser()">ထွက်မည် (Logout)</button>
-        </div>
-    </div>
-
-    <!-- 3. Admin Panel Screen (For Approving Users & Permissions) -->
+    <!-- 2. Admin Panel Screen (For Approving Users & Permissions & Add User) -->
     <div id="adminPanelScreen" style="display:none;" class="container">
         <div class="top-bar">
+            <span style="font-weight:bold; color:var(--primary);">👑 Admin Dashboard</span>
             <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
         </div>
         <h2 style="color:var(--primary); margin-bottom:10px;">👑 Admin Panel - အကောင့်နှင့် ခွင့်ပြုချက်များ ထိန်းချုပ်ရန်</h2>
-        <p style="margin-bottom:20px; color:#555;">အသုံးပြုသူများ၏ အကောင့်နှင့် ခွင့်ပြုချက်များကို Checkbox များဖြင့် ရွေးချယ်ပေးနိုင်ပါသည်။</p>
+        <p style="margin-bottom:20px; color:#555;">အသုံးပြုသူများ၏ အကောင့်အမည်၊ ခွင့်ပြုချက်များနှင့် အကောင့်အသစ်များကို ဤနေရာတွင် စီမံခန့်ခွဲနိုင်ပါသည်။</p>
         
+        <!-- Add New User Card -->
+        <div style="background:#fffdf5; border:1px solid var(--gold); padding:15px; border-radius:8px; margin-bottom:20px;">
+            <h3 style="font-size:16px; color:var(--primary); margin-bottom:10px;">➕ User အသစ် ထပ်မံတိုးမည်</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+                <div class="form-group" style="flex:1; min-width:180px;">
+                    <label>Username အသစ်:</label>
+                    <input type="text" id="newAdminUname" placeholder="အမည်သစ် ရိုက်ထည့်ပါ">
+                </div>
+                <div class="form-group" style="flex:1; min-width:140px;">
+                    <label>Passcode (PIN 4 လုံး):</label>
+                    <input type="password" id="newAdminPin" maxlength="4" placeholder="ဥပမာ- 1234" pattern="[0-9]*" inputmode="numeric">
+                </div>
+                <div>
+                    <button class="btn btn-success btn-sm" onclick="addNewUserFromAdmin()" style="height:38px;">➕ User ဖန်တီးမည်</button>
+                </div>
+            </div>
+        </div>
+
         <div class="table-container">
             <table>
                 <thead>
                     <tr>
                         <th>စဉ်</th>
-                        <th>အီးမေးလ် (Email)</th>
-                        <th>အခြေအနေ</th>
+                        <th>အသုံးပြုသူ (Username)</th>
                         <th>ခွင့်ပြုချက်များ (Permissions)</th>
                         <th>လုပ်ဆောင်ချက်</th>
                     </tr>
@@ -519,12 +534,18 @@
         </div>
     </div>
 
-    <!-- 4. Main Dashboard App -->
+    <!-- 3. Main Dashboard App -->
     <div id="mainApp" class="container">
         
         <div class="top-bar">
-            <button id="adminPanelBtn" class="btn btn-success btn-sm" style="display:none;" onclick="openAdminPanel()">👑 Admin Panel</button>
-            <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
+            <div>
+                <span>👤 လက်ရှိ အသုံးပြုသူ: <b id="loggedInUserDisplay" style="color:var(--primary);"></b></span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn btn-secondary btn-sm" onclick="openChangePinModal()">🔑 Password ပြောင်းမည်</button>
+                <button id="adminPanelBtn" class="btn btn-success btn-sm" style="display:none;" onclick="openAdminPanel()">👑 Admin Panel</button>
+                <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
+            </div>
         </div>
 
         <!-- Header Section for App Interface -->
@@ -733,10 +754,28 @@
         </div>
     </div>
 
+    <!-- Change Username / PIN Modal -->
+    <div id="changePinModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 15px; color: var(--primary);">🔑 Username နှင့် Passcode ပြောင်းမည်</h3>
+            <div class="form-group" style="text-align: left; margin-bottom: 12px;">
+                <label>Username (အမည်သစ်):</label>
+                <input type="text" id="newUsernameInput" placeholder="အမည်သစ် ရိုက်ထည့်ပါ">
+            </div>
+            <div class="form-group" style="text-align: left; margin-bottom: 15px;">
+                <label>Passcode အသစ် (PIN 4 လုံး):</label>
+                <input type="password" id="newPinInput" maxlength="4" placeholder="****" pattern="[0-9]*" inputmode="numeric">
+            </div>
+            <div class="btn-group" style="justify-content: center;">
+                <button class="btn btn-primary btn-sm" onclick="saveNewUserCredentials()">💾 အတည်ပြု သိမ်းဆည်းမည်</button>
+                <button class="btn btn-secondary btn-sm" onclick="closeChangePinModal()">❌ ပိတ်မည်</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -750,115 +789,134 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const ADMIN_EMAIL = "kogyiphozaw.tzo@gmail.com";
-        let isSignUp = false;
-
-        window.currentUserPerms = {
-            canEdit: false,
-            canDelete: false,
-            canClearAll: false,
-            isAdmin: false
+        const DEFAULT_USERS = {
+            "kogyiphozaw": { pin: "1234", isAdmin: true, canEdit: true, canDelete: true, canClearAll: true },
+            "chawsuhlaing": { pin: "1234", isAdmin: false, canEdit: true, canDelete: false, canClearAll: false },
+            "hninhninnag": { pin: "1234", isAdmin: false, canEdit: true, canDelete: false, canClearAll: false },
+            "user3": { pin: "1234", isAdmin: false, canEdit: false, canDelete: false, canClearAll: false },
+            "user4": { pin: "1234", isAdmin: false, canEdit: false, canDelete: false, canClearAll: false }
         };
 
-        window.toggleAuthMode = function() {
-            isSignUp = !isSignUp;
-            document.getElementById('authTitle').innerText = isSignUp ? "အကောင့်အသစ်ဖွင့်ရန်" : "အကောင့်ဝင်ရန်";
-            document.getElementById('authSubmitBtn').innerText = isSignUp ? "အကောင့်ဖွင့်မည် (Sign up)" : "ဝင်မည် (Login)";
-            document.querySelector('.toggle-btn').innerText = isSignUp ? "အကောင့်ရှိပြီးသားလား (Login)" : "အကောင့်အသစ်ဖွင့်ရန် (Sign up)";
+        window.currentUser = null;
+        window.userProfiles = {};
+
+        async function loadAllUserProfiles() {
+            try {
+                const snapshot = await getDocs(collection(db, "app_users"));
+                let loaded = {};
+                snapshot.forEach(d => {
+                    loaded[d.id] = d.data();
+                });
+
+                for (let key in DEFAULT_USERS) {
+                    if (!loaded[key]) {
+                        await setDoc(doc(db, "app_users", key), DEFAULT_USERS[key]);
+                        loaded[key] = DEFAULT_USERS[key];
+                    }
+                }
+                window.userProfiles = loaded;
+                updateUserSelectDropdown();
+            } catch (e) {
+                console.warn("Using local cache for users", e);
+                const local = localStorage.getItem('snf_user_profiles');
+                window.userProfiles = local ? JSON.parse(local) : DEFAULT_USERS;
+                updateUserSelectDropdown();
+            }
         }
 
-        window.handleAuth = async function(event) {
-            event.preventDefault();
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
+        function updateUserSelectDropdown() {
+            const select = document.getElementById('userSelect');
+            select.innerHTML = '';
+            for (let uname in window.userProfiles) {
+                const u = window.userProfiles[uname];
+                select.innerHTML += `<option value="${uname}">${uname} ${u.isAdmin ? '(Admin)' : ''}</option>`;
+            }
+        }
 
-            try {
-                if (isSignUp) {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    const user = userCredential.user;
-                    const isAdm = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-                    await setDoc(doc(db, "users", user.uid), {
-                        email: email,
-                        approved: isAdm,
-                        canEdit: isAdm,
-                        canDelete: isAdm,
-                        canClearAll: isAdm
-                    });
-                    alert('အကောင့်ဖွင့်ပြီးပါပြီ။');
-                } else {
-                    await signInWithEmailAndPassword(auth, email, password);
-                }
-            } catch (error) {
-                alert('အမှားအယွင်းရှိပါသည်: ' + error.message);
+        window.handlePinLogin = function(event) {
+            event.preventDefault();
+            const uname = document.getElementById('userSelect').value;
+            const pin = document.getElementById('pinInput').value.trim();
+
+            const targetUser = window.userProfiles[uname];
+            if (targetUser && targetUser.pin === pin) {
+                window.currentUser = { username: uname, ...targetUser };
+                window.currentUserPerms = {
+                    canEdit: targetUser.isAdmin || targetUser.canEdit,
+                    canDelete: targetUser.isAdmin || targetUser.canDelete,
+                    canClearAll: targetUser.isAdmin || targetUser.canClearAll,
+                    isAdmin: targetUser.isAdmin
+                };
+
+                document.getElementById('loggedInUserDisplay').innerText = uname + (targetUser.isAdmin ? ' 👑 (Admin)' : '');
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                document.getElementById('adminPanelBtn').style.display = targetUser.isAdmin ? 'inline-block' : 'none';
+                document.getElementById('clearAllBtn').style.display = window.currentUserPerms.canClearAll ? 'inline-flex' : 'none';
+                
+                initializeAppUI();
+            } else {
+                alert('Passcode (PIN) မမှန်ကန်ပါ။ ကျေးဇူးပြု၍ ပြန်လည်စစ်ဆေးပါ။');
             }
         }
 
         window.logoutUser = function() {
-            signOut(auth).then(() => {
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('pendingScreen').style.display = 'none';
-                document.getElementById('adminPanelScreen').style.display = 'none';
-                document.getElementById('authScreen').style.display = 'flex';
-            });
+            window.currentUser = null;
+            document.getElementById('pinInput').value = '';
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('adminPanelScreen').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'flex';
         }
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userDocRef = doc(db, "users", user.uid);
-                let userDoc = await getDoc(userDocRef);
+        window.openChangePinModal = function() {
+            document.getElementById('newUsernameInput').value = window.currentUser.username;
+            document.getElementById('newPinInput').value = window.currentUser.pin;
+            document.getElementById('changePinModal').style.display = 'flex';
+        }
 
-                const isUserAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+        window.closeChangePinModal = function() {
+            document.getElementById('changePinModal').style.display = 'none';
+        }
 
-                if (!userDoc.exists()) {
-                    await setDoc(userDocRef, { 
-                        email: user.email, 
-                        approved: isUserAdmin,
-                        canEdit: isUserAdmin,
-                        canDelete: isUserAdmin,
-                        canClearAll: isUserAdmin
-                    });
-                    userDoc = await getDoc(userDocRef);
-                }
+        window.saveNewUserCredentials = async function() {
+            const newUname = document.getElementById('newUsernameInput').value.trim();
+            const newPin = document.getElementById('newPinInput').value.trim();
 
-                const userData = userDoc.data();
-
-                window.currentUserPerms = {
-                    canEdit: isUserAdmin || (userData.canEdit === true),
-                    canDelete: isUserAdmin || (userData.canDelete === true),
-                    canClearAll: isUserAdmin || (userData.canClearAll === true),
-                    isAdmin: isUserAdmin
-                };
-
-                if (window.currentUserPerms.canClearAll) {
-                    document.getElementById('clearAllBtn').style.display = 'inline-flex';
-                } else {
-                    document.getElementById('clearAllBtn').style.display = 'none';
-                }
-
-                if (isUserAdmin || (userData && userData.approved === true)) {
-                    document.getElementById('authScreen').style.display = 'none';
-                    document.getElementById('pendingScreen').style.display = 'none';
-                    document.getElementById('adminPanelScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'block';
-                    document.getElementById('adminPanelBtn').style.display = isUserAdmin ? 'inline-block' : 'none';
-                    initializeAppUI();
-                } else {
-                    document.getElementById('authScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'none';
-                    document.getElementById('adminPanelScreen').style.display = 'none';
-                    document.getElementById('pendingScreen').style.display = 'flex';
-                }
-            } else {
-                document.getElementById('authScreen').style.display = 'flex';
-                document.getElementById('pendingScreen').style.display = 'none';
-                document.getElementById('adminPanelScreen').style.display = 'none';
+            if (!newUname || newPin.length !== 4) {
+                alert('Username နှင့် PIN (၄ လုံး) ကို တိကျစွာ ရိုက်ထည့်ပါ။');
+                return;
             }
-        });
 
-        // Admin Panel Functions with auto-sync fallback
+            const oldUname = window.currentUser.username;
+            const updatedProfile = {
+                ...window.currentUser,
+                pin: newPin
+            };
+            delete updatedProfile.username;
+
+            try {
+                if (oldUname !== newUname) {
+                    await deleteDoc(doc(db, "app_users", oldUname));
+                    delete window.userProfiles[oldUname];
+                }
+                await setDoc(doc(db, "app_users", newUname), updatedProfile);
+                window.userProfiles[newUname] = updatedProfile;
+                window.currentUser.username = newUname;
+                window.currentUser.pin = newPin;
+
+                localStorage.setItem('snf_user_profiles', JSON.stringify(window.userProfiles));
+                document.getElementById('loggedInUserDisplay').innerText = newUname + (updatedProfile.isAdmin ? ' 👑 (Admin)' : '');
+                updateUserSelectDropdown();
+                closeChangePinModal();
+                alert('Username နှင့် Passcode (PIN) အသစ်ကို အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီ။');
+            } catch (e) {
+                alert('သိမ်းဆည်းရာတွင် အမှားအယွင်း ရှိပါသည်: ' + e.message);
+            }
+        }
+
+        // Admin Panel Functions
         window.openAdminPanel = async function() {
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('adminPanelScreen').style.display = 'block';
@@ -873,64 +931,122 @@
         async function loadPendingUsers() {
             const tbody = document.getElementById('pendingUsersTableBody');
             tbody.innerHTML = '';
-            try {
-                const snapshot = await getDocs(collection(db, "users"));
-                let idx = 1;
-                snapshot.forEach(docSnap => {
-                    const uData = docSnap.data();
-                    const uId = docSnap.id;
-                    const isApproved = uData.approved === true;
-                    const isAdm = (uData.email && uData.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+            let idx = 1;
 
-                    const canEditChecked = uData.canEdit ? 'checked' : '';
-                    const canDeleteChecked = uData.canDelete ? 'checked' : '';
-                    const canClearAllChecked = uData.canClearAll ? 'checked' : '';
+            for (let uname in window.userProfiles) {
+                const uData = window.userProfiles[uname];
+                const isAdm = uData.isAdmin === true;
 
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${idx++}</td>
-                            <td>${escapeHtml(uData.email || '')} ${isAdm ? '👑 (Admin)' : ''}</td>
-                            <td>${isApproved ? '<span style="color:green; font-weight:bold;">အတည်ပြုပြီး</span>' : '<span style="color:orange; font-weight:bold;">စောင့်ဆိုင်းဆဲ</span>'}</td>
-                            <td>
-                                <label class="perm-box"><input type="checkbox" id="edit_${uId}" ${canEditChecked} ${isAdm ? 'disabled' : ''}> ပြင်ခွင့် (Edit)</label>
-                                <label class="perm-box"><input type="checkbox" id="del_${uId}" ${canDeleteChecked} ${isAdm ? 'disabled' : ''}> ဖျက်ခွင့် (Delete)</label>
-                                <label class="perm-box"><input type="checkbox" id="clear_${uId}" ${canClearAllChecked} ${isAdm ? 'disabled' : ''}> အကုန်ဖျက်ခွင့် (Clear All)</label>
-                            </td>
-                            <td>
-                                ${!isAdm ? `
-                                    <button class="btn btn-success btn-sm" onclick="saveUserPermissions('${uId}')">💾 သိမ်းဆည်းမည်</button>
-                                    ${!isApproved ? `<button class="btn btn-primary btn-sm" onclick="approveUser('${uId}')">✅ ခွင့်ပြုမည်</button>` : ''}
-                                ` : 'အပြည့်အဝ ခွင့်ပြုထားပြီး'}
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (e) {
-                console.error(e);
+                const canEditChecked = uData.canEdit ? 'checked' : '';
+                const canDeleteChecked = uData.canDelete ? 'checked' : '';
+                const canClearAllChecked = uData.canClearAll ? 'checked' : '';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${idx++}</td>
+                        <td><input type="text" id="uname_${uname}" value="${escapeHtml(uname)}" ${isAdm ? 'readonly style="background:#eee;"' : ''} style="width:140px; text-align:center;"></td>
+                        <td>
+                            <label class="perm-box"><input type="checkbox" id="edit_${uname}" ${canEditChecked} ${isAdm ? 'disabled' : ''}> ပြင်ခွင့် (Edit)</label>
+                            <label class="perm-box"><input type="checkbox" id="del_${uname}" ${canDeleteChecked} ${isAdm ? 'disabled' : ''}> ဖျက်ခွင့် (Delete)</label>
+                            <label class="perm-box"><input type="checkbox" id="clear_${uname}" ${canClearAllChecked} ${isAdm ? 'disabled' : ''}> အကုန်ဖျက်ခွင့် (Clear All)</label>
+                        </td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="saveUserPermissions('${uname}')">💾 သိမ်းဆည်းမည်</button>
+                            ${!isAdm ? `<button class="btn btn-danger btn-sm" onclick="deleteUserAccount('${uname}')">🗑️ ဖျက်မည်</button>` : ''}
+                        </td>
+                    </tr>
+                `;
             }
         }
 
-        window.saveUserPermissions = async function(uId) {
-            const canEdit = document.getElementById(`edit_${uId}`).checked;
-            const canDelete = document.getElementById(`del_${uId}`).checked;
-            const canClearAll = document.getElementById(`clear_${uId}`).checked;
+        window.saveUserPermissions = async function(oldUname) {
+            const newUname = document.getElementById(`uname_${oldUname}`).value.trim();
+            const canEdit = document.getElementById(`edit_${oldUname}`).checked;
+            const canDelete = document.getElementById(`del_${oldUname}`).checked;
+            const canClearAll = document.getElementById(`clear_${oldUname}`).checked;
+
+            if (!newUname) {
+                alert('Username အလွတ်ထား၍ မရပါ။');
+                return;
+            }
 
             try {
-                await updateDoc(doc(db, "users", uId), {
-                    canEdit: canEdit,
-                    canDelete: canDelete,
-                    canClearAll: canClearAll,
-                    approved: true
-                });
-                alert('ခွင့်ပြုချက်များကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
+                const currentData = window.userProfiles[oldUname];
+                currentData.canEdit = canEdit;
+                currentData.canDelete = canDelete;
+                currentData.canClearAll = canClearAll;
+
+                if (oldUname !== newUname) {
+                    if (window.userProfiles[newUname]) {
+                        alert('ဤ Username မှာ ရှိနှင့်ပြီးသား ဖြစ်ပါသည်။ အခြားအမည်ပြောင်းပါ။');
+                        return;
+                    }
+                    await deleteDoc(doc(db, "app_users", oldUname));
+                    delete window.userProfiles[oldUname];
+                }
+
+                await setDoc(doc(db, "app_users", newUname), currentData);
+                window.userProfiles[newUname] = currentData;
+
+                localStorage.setItem('snf_user_profiles', JSON.stringify(window.userProfiles));
+                updateUserSelectDropdown();
+                alert('အချက်အလက်များကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
                 await loadPendingUsers();
             } catch (e) {
-                alert('အမှားအယွင်း ရှိပါသည်။');
+                alert('အမှားအယွင်း ရှိပါသည်။: ' + e.message);
             }
         }
 
-        window.approveUser = async function(uId) {
-            await saveUserPermissions(uId);
+        window.addNewUserFromAdmin = async function() {
+            const uname = document.getElementById('newAdminUname').value.trim();
+            const pin = document.getElementById('newAdminPin').value.trim();
+
+            if (!uname || pin.length !== 4) {
+                alert('Username နှင့် PIN (၄ လုံး) ကို အပြည့်အစုံ ရိုက်ထည့်ပါ။');
+                return;
+            }
+
+            if (window.userProfiles[uname]) {
+                alert('ဤ Username မှာ ရှိနှင့်ပြီးသား ဖြစ်ပါသည်။');
+                return;
+            }
+
+            const newUserObj = {
+                pin: pin,
+                isAdmin: false,
+                canEdit: false,
+                canDelete: false,
+                canClearAll: false
+            };
+
+            try {
+                await setDoc(doc(db, "app_users", uname), newUserObj);
+                window.userProfiles[uname] = newUserObj;
+                localStorage.setItem('snf_user_profiles', JSON.stringify(window.userProfiles));
+                updateUserSelectDropdown();
+
+                document.getElementById('newAdminUname').value = '';
+                document.getElementById('newAdminPin').value = '';
+                alert('User အသစ်ကို အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။');
+                await loadPendingUsers();
+            } catch (e) {
+                alert('အမှားအယွင်း ရှိပါသည်: ' + e.message);
+            }
+        }
+
+        window.deleteUserAccount = async function(uname) {
+            if (confirm(`အသုံးပြုသူ "${uname}" ကို ဖျက်ပစ်ရန် သေချာပါသလား?`)) {
+                try {
+                    await deleteDoc(doc(db, "app_users", uname));
+                    delete window.userProfiles[uname];
+                    localStorage.setItem('snf_user_profiles', JSON.stringify(window.userProfiles));
+                    updateUserSelectDropdown();
+                    alert('အကောင့်ကို ဖျက်ဆီးပြီးပါပြီ။');
+                    await loadPendingUsers();
+                } catch (e) {
+                    alert('ဖျက်ဆီးရာတွင် အမှားအယွင်း ရှိပါသည်။');
+                }
+            }
         }
 
         window.db = db;
@@ -940,6 +1056,8 @@
         window.updateDoc = updateDoc;
         window.deleteDoc = deleteDoc;
         window.doc = doc;
+
+        loadAllUserProfiles();
     </script>
 
     <script>
