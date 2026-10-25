@@ -44,7 +44,7 @@
         }
 
         /* Auth Screen */
-        #authScreen, #pendingScreen {
+        #authScreen, #pendingScreen, #adminPanelScreen {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -112,6 +112,7 @@
         .top-bar {
             display: flex;
             justify-content: flex-end;
+            gap: 10px;
             margin-bottom: 15px;
         }
 
@@ -457,7 +458,7 @@
     <!-- 1. Authentication Screen -->
     <div id="authScreen">
         <div class="auth-card">
-            <h2 id="authTitle">Admin အကောင့်ဝင်ရန်</h2>
+            <h2 id="authTitle">အကောင့်ဝင်ရန်</h2>
             <form id="authForm" onsubmit="handleAuth(event)">
                 <input type="email" id="authEmail" placeholder="အီးမေးလ် (Email)" required>
                 <input type="password" id="authPassword" placeholder="စကားဝှက် (Password)" required>
@@ -471,15 +472,44 @@
     <div id="pendingScreen" style="display:none;">
         <div class="container" style="max-width:500px;">
             <h2 style="color:var(--primary); margin-bottom:15px;">Admin ခွင့်ပြုချက် စောင့်ဆိုင်းနေပါသည်</h2>
-            <p style="margin-bottom:20px; color:#555;">ကျေးဇူးပြု၍ Admin မှ သင့်အကောင့်ကို အတည်ပြုပေးသည်အထိ ခေတ္တစောင့်ဆိုင်းပါနှင့် Logout လုပ်ပြီး ပြန်ဝင်ကြည့်ပါ။</p>
+            <p style="margin-bottom:20px; color:#555;">ကျေးဇူးပြု၍ Admin မှ သင့်အကောင့်ကို အတည်ပြုပေးသည်အထိ ခေတ္တစောင့်ဆိုင်းပါ။</p>
             <button class="btn btn-secondary" onclick="logoutUser()">ထွက်မည် (Logout)</button>
         </div>
     </div>
 
-    <!-- 3. Main Dashboard App -->
+    <!-- 3. Admin Panel Screen (For Approving Users) -->
+    <div id="adminPanelScreen" style="display:none;" class="container">
+        <div class="top-bar">
+            <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
+        </div>
+        <h2 style="color:var(--primary); margin-bottom:20px;">👑 Admin Panel - အကောင့်ခွင့်ပြုချက်ပေးရန်</h2>
+        <p style="margin-bottom:15px; color:#555;">အောက်ပါစာရင်းတွင် အတည်ပြုရန် စောင့်ဆိုင်းနေသော အကောင့်များအား ခွင့်ပြုချက်ပေးနိုင်ပါသည်။</p>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>စဉ်</th>
+                        <th>အီးမေးလ် (Email)</th>
+                        <th>အခြေအနေ</th>
+                        <th>လုပ်ဆောင်ချက်</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingUsersTableBody">
+                    <!-- Dynamic loaded -->
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 20px;">
+            <button class="btn btn-primary" onclick="goToMainAppFromAdmin()">📥 ပင်မစာမျက်နှာ (Dashboard) သို့သွားမည်</button>
+        </div>
+    </div>
+
+    <!-- 4. Main Dashboard App -->
     <div id="mainApp" class="container">
         
         <div class="top-bar">
+            <button id="adminPanelBtn" class="btn btn-success btn-sm" style="display:none;" onclick="openAdminPanel()">👑 Admin Panel</button>
             <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
         </div>
 
@@ -709,29 +739,31 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        const ADMIN_EMAIL = "kogyiphozaw.tzo@gmail.com";
         let isSignUp = false;
 
         window.toggleAuthMode = function() {
             isSignUp = !isSignUp;
-            document.getElementById('authTitle').innerText = isSignUp ? "Admin အကောင့်အသစ်ဖွင့်ရန်" : "Admin အကောင့်ဝင်ရန်";
+            document.getElementById('authTitle').innerText = isSignUp ? "အကောင့်အသစ်ဖွင့်ရန်" : "အကောင့်ဝင်ရန်";
             document.getElementById('authSubmitBtn').innerText = isSignUp ? "အကောင့်ဖွင့်မည် (Sign up)" : "ဝင်မည် (Login)";
             document.querySelector('.toggle-btn').innerText = isSignUp ? "အကောင့်ရှိပြီးသားလား (Login)" : "အကောင့်အသစ်ဖွင့်ရန် (Sign up)";
         }
 
         window.handleAuth = async function(event) {
             event.preventDefault();
-            const email = document.getElementById('authEmail').value;
-            const password = document.getElementById('authPassword').value;
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('passwordInput') || document.getElementById('authPassword').value;
 
             try {
                 if (isSignUp) {
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
+                    const isAdm = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
                     await setDoc(doc(db, "users", user.uid), {
                         email: email,
-                        approved: false
+                        approved: isAdm // Admin ဆိုရင် အလိုအလျောက် true ဖြစ်မည်
                     });
-                    alert('အကောင့်ဖွင့်ပြီးပါပြီ။ Admin မှ ခွင့်ပြုချက်ပေးရန် စောင့်ဆိုင်းပါ။');
+                    alert('အကောင့်ဖွင့်ပြီးပါပြီ။');
                 } else {
                     await signInWithEmailAndPassword(auth, email, password);
                 }
@@ -744,6 +776,7 @@
             signOut(auth).then(() => {
                 document.getElementById('mainApp').style.display = 'none';
                 document.getElementById('pendingScreen').style.display = 'none';
+                document.getElementById('adminPanelScreen').style.display = 'none';
                 document.getElementById('authScreen').style.display = 'flex';
             });
         }
@@ -751,26 +784,94 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
+                let userDoc = await getDoc(userDocRef);
 
-                if (userDoc.exists() && userDoc.data().approved === true) {
+                // အကယ်၍ user doc မရှိသေးပါက ဖန်တီးပေးမည်
+                if (!userDoc.exists()) {
+                    const isAdm = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+                    await setDoc(userDocRef, { email: user.email, approved: isAdm });
+                    userDoc = await getDoc(userDocRef);
+                }
+
+                const userData = userDoc.data();
+                const isUserAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+                if (isUserAdmin) {
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('pendingScreen').style.display = 'none';
+                    document.getElementById('adminPanelScreen').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('adminPanelBtn').style.display = 'inline-block';
+                    initializeAppUI();
+                } else if (userData && userData.approved === true) {
+                    document.getElementById('authScreen').style.display = 'none';
+                    document.getElementById('pendingScreen').style.display = 'none';
+                    document.getElementById('adminPanelScreen').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('adminPanelBtn').style.display = 'none';
                     initializeAppUI();
                 } else {
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'none';
+                    document.getElementById('adminPanelScreen').style.display = 'none';
                     document.getElementById('pendingScreen').style.display = 'flex';
                 }
             } else {
                 document.getElementById('authScreen').style.display = 'flex';
                 document.getElementById('pendingScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('adminPanelScreen').style.display = 'none';
             }
         });
 
-        // Expose firestore methods globally for app usage
+        // Admin panel functions
+        window.openAdminPanel = async function() {
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('adminPanelScreen').style.display = 'block';
+            await loadPendingUsers();
+        }
+
+        window.goToMainAppFromAdmin = function() {
+            document.getElementById('adminPanelScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+
+        async function loadPendingUsers() {
+            const tbody = document.getElementById('pendingUsersTableBody');
+            tbody.innerHTML = '';
+            try {
+                const snapshot = await getDocs(collection(db, "users"));
+                let idx = 1;
+                snapshot.forEach(docSnap => {
+                    const uData = docSnap.data();
+                    const uId = docSnap.id;
+                    const isApproved = uData.approved === true;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${idx++}</td>
+                            <td>${escapeHtml(uData.email || '')}</td>
+                            <td>${isApproved ? '<span style="color:green; font-weight:bold;">အတည်ပြုပြီး</span>' : '<span style="color:orange; font-weight:bold;">စောင့်ဆိုင်းဆဲ</span>'}</td>
+                            <td>
+                                ${!isApproved ? `<button class="btn btn-success btn-sm" onclick="approveUser('${uId}')">✅ ခွင့်ပြုမည်</button>` : 'ခွင့်ပြုပြီး'}
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        window.approveUser = async function(uId) {
+            try {
+                await updateDoc(doc(db, "users", uId), { approved: true });
+                alert('အကောင့်ကို အောင်မြင်စွာ ခွင့်ပြုပေးလိုက်ပါပြီ။');
+                await loadPendingUsers();
+            } catch (e) {
+                alert('အမှားအယွင်း ရှိပါသည်။');
+            }
+        }
+
         window.db = db;
         window.collection = collection;
         window.getDocs = getDocs;
