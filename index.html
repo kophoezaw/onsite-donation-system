@@ -376,6 +376,19 @@
         .action-btns { display: flex; gap: 6px; justify-content: center; }
         .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 4px; }
 
+        /* Checkbox Styling for Admin */
+        .perm-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin: 0 4px;
+            font-size: 12px;
+        }
+        .perm-box input[type="checkbox"] {
+            width: auto;
+            cursor: pointer;
+        }
+
         /* Modal Styles for Slip */
         .modal-overlay {
             display: none;
@@ -477,13 +490,13 @@
         </div>
     </div>
 
-    <!-- 3. Admin Panel Screen (For Approving Users) -->
+    <!-- 3. Admin Panel Screen (For Approving Users & Permissions) -->
     <div id="adminPanelScreen" style="display:none;" class="container">
         <div class="top-bar">
             <button class="btn btn-secondary btn-sm" onclick="logoutUser()">🚪 ထွက်မည် (Logout)</button>
         </div>
-        <h2 style="color:var(--primary); margin-bottom:20px;">👑 Admin Panel - အကောင့်ခွင့်ပြုချက်ပေးရန်</h2>
-        <p style="margin-bottom:15px; color:#555;">အောက်ပါစာရင်းတွင် အတည်ပြုရန် စောင့်ဆိုင်းနေသော အကောင့်များအား ခွင့်ပြုချက်ပေးနိုင်ပါသည်။</p>
+        <h2 style="color:var(--primary); margin-bottom:10px;">👑 Admin Panel - အကောင့်နှင့် ခွင့်ပြုချက်များ ထိန်းချုပ်ရန်</h2>
+        <p style="margin-bottom:20px; color:#555;">အသုံးပြုသူများ၏ အကောင့်နှင့် ခွင့်ပြုချက်များကို Checkbox များဖြင့် ရွေးချယ်ပေးနိုင်ပါသည်။</p>
         
         <div class="table-container">
             <table>
@@ -492,6 +505,7 @@
                         <th>စဉ်</th>
                         <th>အီးမေးလ် (Email)</th>
                         <th>အခြေအနေ</th>
+                        <th>ခွင့်ပြုချက်များ (Permissions)</th>
                         <th>လုပ်ဆောင်ချက်</th>
                     </tr>
                 </thead>
@@ -648,7 +662,7 @@
 
             <div class="btn-group">
                 <button class="btn btn-success" onclick="exportToCSV()">📊 Excel / CSV ထုတ်ယူမည်</button>
-                <button class="btn btn-danger" onclick="clearAllData()">🗑️ အချက်အလက်များအားလုံး ဖျက်မည် (Clear All)</button>
+                <button id="clearAllBtn" class="btn btn-danger" style="display:none;" onclick="clearAllData()">🗑️ အချက်အလက်များအားလုံး ဖျက်မည် (Clear All)</button>
             </div>
 
             <div class="summary-cards">
@@ -742,6 +756,14 @@
         const ADMIN_EMAIL = "kogyiphozaw.tzo@gmail.com";
         let isSignUp = false;
 
+        // Current user permission state
+        window.currentUserPerms = {
+            canEdit: false,
+            canDelete: false,
+            canClearAll: false,
+            isAdmin: false
+        };
+
         window.toggleAuthMode = function() {
             isSignUp = !isSignUp;
             document.getElementById('authTitle').innerText = isSignUp ? "အကောင့်အသစ်ဖွင့်ရန်" : "အကောင့်ဝင်ရန်";
@@ -752,7 +774,7 @@
         window.handleAuth = async function(event) {
             event.preventDefault();
             const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('passwordInput') || document.getElementById('authPassword').value;
+            const password = document.getElementById('authPassword').value;
 
             try {
                 if (isSignUp) {
@@ -761,7 +783,10 @@
                     const isAdm = (email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
                     await setDoc(doc(db, "users", user.uid), {
                         email: email,
-                        approved: isAdm // Admin ဆိုရင် အလိုအလျောက် true ဖြစ်မည်
+                        approved: isAdm,
+                        canEdit: isAdm,
+                        canDelete: isAdm,
+                        canClearAll: isAdm
                     });
                     alert('အကောင့်ဖွင့်ပြီးပါပြီ။');
                 } else {
@@ -786,29 +811,41 @@
                 const userDocRef = doc(db, "users", user.uid);
                 let userDoc = await getDoc(userDocRef);
 
-                // အကယ်၍ user doc မရှိသေးပါက ဖန်တီးပေးမည်
+                const isUserAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
                 if (!userDoc.exists()) {
-                    const isAdm = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
-                    await setDoc(userDocRef, { email: user.email, approved: isAdm });
+                    await setDoc(userDocRef, { 
+                        email: user.email, 
+                        approved: isUserAdmin,
+                        canEdit: isUserAdmin,
+                        canDelete: isUserAdmin,
+                        canClearAll: isUserAdmin
+                    });
                     userDoc = await getDoc(userDocRef);
                 }
 
                 const userData = userDoc.data();
-                const isUserAdmin = (user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
 
-                if (isUserAdmin) {
+                window.currentUserPerms = {
+                    canEdit: isUserAdmin || (userData.canEdit === true),
+                    canDelete: isUserAdmin || (userData.canDelete === true),
+                    canClearAll: isUserAdmin || (userData.canClearAll === true),
+                    isAdmin: isUserAdmin
+                };
+
+                // Clear All Button Visibility
+                if (window.currentUserPerms.canClearAll) {
+                    document.getElementById('clearAllBtn').style.display = 'inline-flex';
+                } else {
+                    document.getElementById('clearAllBtn').style.display = 'none';
+                }
+
+                if (isUserAdmin || (userData && userData.approved === true)) {
                     document.getElementById('authScreen').style.display = 'none';
                     document.getElementById('pendingScreen').style.display = 'none';
                     document.getElementById('adminPanelScreen').style.display = 'none';
                     document.getElementById('mainApp').style.display = 'block';
-                    document.getElementById('adminPanelBtn').style.display = 'inline-block';
-                    initializeAppUI();
-                } else if (userData && userData.approved === true) {
-                    document.getElementById('authScreen').style.display = 'none';
-                    document.getElementById('pendingScreen').style.display = 'none';
-                    document.getElementById('adminPanelScreen').style.display = 'none';
-                    document.getElementById('mainApp').style.display = 'block';
-                    document.getElementById('adminPanelBtn').style.display = 'none';
+                    document.getElementById('adminPanelBtn').style.display = isUserAdmin ? 'inline-block' : 'none';
                     initializeAppUI();
                 } else {
                     document.getElementById('authScreen').style.display = 'none';
@@ -823,7 +860,7 @@
             }
         });
 
-        // Admin panel functions
+        // Admin Panel Functions
         window.openAdminPanel = async function() {
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('adminPanelScreen').style.display = 'block';
@@ -845,14 +882,27 @@
                     const uData = docSnap.data();
                     const uId = docSnap.id;
                     const isApproved = uData.approved === true;
+                    const isAdm = (uData.email && uData.email.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+
+                    const canEditChecked = uData.canEdit ? 'checked' : '';
+                    const canDeleteChecked = uData.canDelete ? 'checked' : '';
+                    const canClearAllChecked = uData.canClearAll ? 'checked' : '';
 
                     tbody.innerHTML += `
                         <tr>
                             <td>${idx++}</td>
-                            <td>${escapeHtml(uData.email || '')}</td>
+                            <td>${escapeHtml(uData.email || '')} ${isAdm ? '👑 (Admin)' : ''}</td>
                             <td>${isApproved ? '<span style="color:green; font-weight:bold;">အတည်ပြုပြီး</span>' : '<span style="color:orange; font-weight:bold;">စောင့်ဆိုင်းဆဲ</span>'}</td>
                             <td>
-                                ${!isApproved ? `<button class="btn btn-success btn-sm" onclick="approveUser('${uId}')">✅ ခွင့်ပြုမည်</button>` : 'ခွင့်ပြုပြီး'}
+                                <label class="perm-box"><input type="checkbox" id="edit_${uId}" ${canEditChecked} ${isAdm ? 'disabled' : ''}> ပြင်ခွင့် (Edit)</label>
+                                <label class="perm-box"><input type="checkbox" id="del_${uId}" ${canDeleteChecked} ${isAdm ? 'disabled' : ''}> ဖျက်ခွင့် (Delete)</label>
+                                <label class="perm-box"><input type="checkbox" id="clear_${uId}" ${canClearAllChecked} ${isAdm ? 'disabled' : ''}> အကုန်ဖျက်ခွင့် (Clear All)</label>
+                            </td>
+                            <td>
+                                ${!isAdm ? `
+                                    <button class="btn btn-success btn-sm" onclick="saveUserPermissions('${uId}')">💾 သိမ်းဆည်းမည်</button>
+                                    ${!isApproved ? `<button class="btn btn-primary btn-sm" onclick="approveUser('${uId}')">✅ ခွင့်ပြုမည်</button>` : ''}
+                                ` : 'အပြည့်အဝ ခွင့်ပြုထားပြီး'}
                             </td>
                         </tr>
                     `;
@@ -862,14 +912,27 @@
             }
         }
 
-        window.approveUser = async function(uId) {
+        window.saveUserPermissions = async function(uId) {
+            const canEdit = document.getElementById(`edit_${uId}`).checked;
+            const canDelete = document.getElementById(`del_${uId}`).checked;
+            const canClearAll = document.getElementById(`clear_${uId}`).checked;
+
             try {
-                await updateDoc(doc(db, "users", uId), { approved: true });
-                alert('အကောင့်ကို အောင်မြင်စွာ ခွင့်ပြုပေးလိုက်ပါပြီ။');
+                await updateDoc(doc(db, "users", uId), {
+                    canEdit: canEdit,
+                    canDelete: canDelete,
+                    canClearAll: canClearAll,
+                    approved: true
+                });
+                alert('ခွင့်ပြုချက်များကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
                 await loadPendingUsers();
             } catch (e) {
                 alert('အမှားအယွင်း ရှိပါသည်။');
             }
+        }
+
+        window.approveUser = async function(uId) {
+            await saveUserPermissions(uId);
         }
 
         window.db = db;
@@ -1122,6 +1185,10 @@
                 if (editId === "-1") {
                     await addDoc(collection(window.db, "donations_sales"), recordData);
                 } else {
+                    if (!window.currentUserPerms.canEdit) {
+                        alert("သင့်တွင် စာရင်း ပြင်ဆင်ခွင့် ခွင့်ပြုချက်မရှိပါ။");
+                        return;
+                    }
                     await updateDoc(doc(window.db, "donations_sales", editId), recordData);
                 }
                 resetForm();
@@ -1189,6 +1256,15 @@
                     customDisplayStr = rec.customItems.map(c => `${c.name}: ${c.amount.toLocaleString()}`).join(', ');
                 }
 
+                // Render Action Buttons based on User Permissions
+                let actionBtnsHtml = `<button type="button" class="btn btn-secondary btn-sm" onclick="openSlipModal('${rec.id}')">စလစ်</button>`;
+                if (window.currentUserPerms.canEdit) {
+                    actionBtnsHtml += `<button type="button" class="btn btn-secondary btn-sm" onclick="editRecord('${rec.id}')">✏️ ပြင်မည်</button>`;
+                }
+                if (window.currentUserPerms.canDelete) {
+                    actionBtnsHtml += `<button type="button" class="btn btn-danger btn-sm" onclick="deleteRecord('${rec.id}')">🗑️</button>`;
+                }
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${displayIndex++}</td>
@@ -1209,9 +1285,7 @@
                     <td>${pType}</td>
                     <td class="action-column">
                         <div class="action-btns">
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="openSlipModal('${rec.id}')">စလစ်</button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="editRecord('${rec.id}')">✏️ ပြင်မည်</button>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteRecord('${rec.id}')">🗑️</button>
+                            ${actionBtnsHtml}
                         </div>
                     </td>
                 `;
@@ -1351,6 +1425,11 @@
         }
 
         function editRecord(recId) {
+            if (!window.currentUserPerms.canEdit) {
+                alert("သင့်တွင် စာရင်း ပြင်ဆင်ခွင့် ခွင့်ပြုချက်မရှိပါ။");
+                return;
+            }
+
             const rec = records.find(r => String(r.id) === String(recId));
             if(!rec) {
                 alert("စာရင်းရှာမတွေ့ပါခင်ဗျာ။");
@@ -1384,6 +1463,11 @@
         }
 
         async function deleteRecord(recId) {
+            if (!window.currentUserPerms.canDelete) {
+                alert("သင့်တွင် စာရင်း ဖျက်ဆီးခွင့် ခွင့်ပြုချက်မရှိပါ။");
+                return;
+            }
+
             if (confirm('ဤစာရင်းကို ဖျက်ရန် သေချာပါသလား?')) {
                 try {
                     await deleteDoc(doc(window.db, "donations_sales", recId));
@@ -1401,6 +1485,11 @@
         }
 
         async function clearAllData() {
+            if (!window.currentUserPerms.canClearAll) {
+                alert("သင့်တွင် အချက်အလက်များ အားလုံး ဖျက်ဆီးခွင့် ခွင့်ပြုချက်မရှိပါ။");
+                return;
+            }
+
             if (confirm('အချက်အလက်များ အားလုံးကို ဖျက်ပစ်ရန် သေချာပါသလား?')) {
                 try {
                     for (let rec of records) {
