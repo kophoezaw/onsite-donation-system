@@ -756,7 +756,6 @@
         const ADMIN_EMAIL = "kogyiphozaw.tzo@gmail.com";
         let isSignUp = false;
 
-        // Current user permission state
         window.currentUserPerms = {
             canEdit: false,
             canDelete: false,
@@ -833,7 +832,6 @@
                     isAdmin: isUserAdmin
                 };
 
-                // Clear All Button Visibility
                 if (window.currentUserPerms.canClearAll) {
                     document.getElementById('clearAllBtn').style.display = 'inline-flex';
                 } else {
@@ -860,7 +858,7 @@
             }
         });
 
-        // Admin Panel Functions
+        // Admin Panel Functions with auto-sync fallback
         window.openAdminPanel = async function() {
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('adminPanelScreen').style.display = 'block';
@@ -1256,7 +1254,6 @@
                     customDisplayStr = rec.customItems.map(c => `${c.name}: ${c.amount.toLocaleString()}`).join(', ');
                 }
 
-                // Render Action Buttons based on User Permissions
                 let actionBtnsHtml = `<button type="button" class="btn btn-secondary btn-sm" onclick="openSlipModal('${rec.id}')">စလစ်</button>`;
                 if (window.currentUserPerms.canEdit) {
                     actionBtnsHtml += `<button type="button" class="btn btn-secondary btn-sm" onclick="editRecord('${rec.id}')">✏️ ပြင်မည်</button>`;
