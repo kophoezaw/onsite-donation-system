@@ -469,7 +469,7 @@
     <!-- 1. Passcode Authentication Screen -->
     <div id="authScreen">
         <div class="auth-card">
-            <h2>အကောင့်ဝင်ရန် (PIN 4 လုံး)</h2>
+            <h2>အကောင့်ဝင်ရန်</h2>
             <form id="authForm" onsubmit="handlePinLogin(event)">
                 <div class="form-group" style="margin-bottom: 15px; text-align: left;">
                     <label>အသုံးပြုသူ ရွေးချယ်ပါ:</label>
@@ -478,8 +478,8 @@
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom: 15px; text-align: left;">
-                    <label>Passcode (PIN 4 လုံး):</label>
-                    <input type="password" id="pinInput" maxlength="4" placeholder="****" pattern="[0-9]*" inputmode="numeric" required>
+                    <label>Passcode (PIN):</label>
+                    <input type="password" id="pinInput" maxlength="15" placeholder="Passcode ထည့်ပါ" required>
                 </div>
                 <button type="submit">ဝင်မည် (Login)</button>
             </form>
@@ -505,8 +505,8 @@
                     <input type="text" id="newAdminUname" placeholder="အမည်သစ် ရိုက်ထည့်ပါ">
                 </div>
                 <div class="form-group" style="flex:1; min-width:140px;">
-                    <label>Passcode (PIN 4 လုံး):</label>
-                    <input type="password" id="newAdminPin" maxlength="4" placeholder="ဥပမာ- 1234" pattern="[0-9]*" inputmode="numeric">
+                    <label>Passcode (အများဆုံး ၁၅ လုံး):</label>
+                    <input type="password" id="newAdminPin" maxlength="15" placeholder="ဥပမာ- 1234">
                 </div>
                 <div>
                     <button class="btn btn-success btn-sm" onclick="addNewUserFromAdmin()" style="height:38px;">➕ User ဖန်တီးမည်</button>
@@ -763,8 +763,8 @@
                 <input type="text" id="newUsernameInput" placeholder="အမည်သစ် ရိုက်ထည့်ပါ">
             </div>
             <div class="form-group" style="text-align: left; margin-bottom: 15px;">
-                <label>Passcode အသစ် (PIN 4 လုံး):</label>
-                <input type="password" id="newPinInput" maxlength="4" placeholder="****" pattern="[0-9]*" inputmode="numeric">
+                <label>Passcode အသစ် (အများဆုံး ၁၅ လုံး):</label>
+                <input type="password" id="newPinInput" maxlength="15" placeholder="Passcode အသစ်ထည့်ပါ">
             </div>
             <div class="btn-group" style="justify-content: center;">
                 <button class="btn btn-primary btn-sm" onclick="saveNewUserCredentials()">💾 အတည်ပြု သိမ်းဆည်းမည်</button>
@@ -830,8 +830,8 @@
             const select = document.getElementById('userSelect');
             select.innerHTML = '';
             for (let uname in window.userProfiles) {
-                const u = window.userProfiles[uname];
-                select.innerHTML += `<option value="${uname}">${uname} ${u.isAdmin ? '(Admin)' : ''}</option>`;
+                // Admin စာလုံးဖြုတ်၍ သန့်ရှင်းစွာ တန်းစီပြသခြင်း
+                select.innerHTML += `<option value="${uname}">${uname}</option>`;
             }
         }
 
@@ -850,7 +850,7 @@
                     isAdmin: targetUser.isAdmin
                 };
 
-                document.getElementById('loggedInUserDisplay').innerText = uname + (targetUser.isAdmin ? ' 👑 (Admin)' : '');
+                document.getElementById('loggedInUserDisplay').innerText = uname;
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 document.getElementById('adminPanelBtn').style.display = targetUser.isAdmin ? 'inline-block' : 'none';
@@ -884,8 +884,8 @@
             const newUname = document.getElementById('newUsernameInput').value.trim();
             const newPin = document.getElementById('newPinInput').value.trim();
 
-            if (!newUname || newPin.length !== 4) {
-                alert('Username နှင့် PIN (၄ လုံး) ကို တိကျစွာ ရိုက်ထည့်ပါ။');
+            if (!newUname || newPin.length < 1 || newPin.length > 15) {
+                alert('Username နှင့် Passcode (၁ မှ ၁၅ လုံးအတွင်း) ကို တိကျစွာ ရိုက်ထည့်ပါ။');
                 return;
             }
 
@@ -907,10 +907,10 @@
                 window.currentUser.pin = newPin;
 
                 localStorage.setItem('snf_user_profiles', JSON.stringify(window.userProfiles));
-                document.getElementById('loggedInUserDisplay').innerText = newUname + (updatedProfile.isAdmin ? ' 👑 (Admin)' : '');
+                document.getElementById('loggedInUserDisplay').innerText = newUname;
                 updateUserSelectDropdown();
                 closeChangePinModal();
-                alert('Username နှင့် Passcode (PIN) အသစ်ကို အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီ။');
+                alert('Username နှင့် Passcode အသစ်ကို အောင်မြင်စွာ သိမ်းဆည်းလိုက်ပါပြီ။');
             } catch (e) {
                 alert('သိမ်းဆည်းရာတွင် အမှားအယွင်း ရှိပါသည်: ' + e.message);
             }
@@ -1001,8 +1001,8 @@
             const uname = document.getElementById('newAdminUname').value.trim();
             const pin = document.getElementById('newAdminPin').value.trim();
 
-            if (!uname || pin.length !== 4) {
-                alert('Username နှင့် PIN (၄ လုံး) ကို အပြည့်အစုံ ရိုက်ထည့်ပါ။');
+            if (!uname || pin.length < 1 || pin.length > 15) {
+                alert('Username နှင့် Passcode (၁ မှ ၁၅ လုံးအတွင်း) ကို အပြည့်အစုံ ရိုက်ထည့်ပါ။');
                 return;
             }
 
